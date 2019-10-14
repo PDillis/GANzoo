@@ -15,6 +15,11 @@ def glorot_init(size):
 
 
 
+
+
+
+
+
 # Random noise setting for Generator
 Z = tf.placeholder(tf.float32, shape=[None, 100], name='Z')
 
