@@ -111,7 +111,7 @@ def generate_style_transfer_video(
     mp4_file,
     Gs,
     style_ranges,
-    dst_seeds=[700, 198]
+    dst_seeds=[700, 198],
     image_shrink=1,
     image_zoom=1,
     duration_sec=30.0,
@@ -212,7 +212,7 @@ def main(model_path, seed, size, cols=3, rows=2, random=False, coarse=False, mid
             mp4_file=mp4_file,
             Gs=Gs,
             style_ranges=style_ranges,
-            dst_seeds=dst_seeds
+            dst_seeds=dst_seeds,
             image_shrink=1,
             image_zoom=1,
             duration_sec=30.0,
@@ -232,7 +232,7 @@ def main(model_path, seed, size, cols=3, rows=2, random=False, coarse=False, mid
             mp4_file=mp4_file,
             Gs=Gs,
             style_ranges=style_ranges,
-            dst_seeds=dst_seeds
+            dst_seeds=dst_seeds,
             image_shrink=1,
             image_zoom=1,
             duration_sec=30.0,
@@ -252,7 +252,7 @@ def main(model_path, seed, size, cols=3, rows=2, random=False, coarse=False, mid
             mp4_file=mp4_file,
             Gs=Gs,
             style_ranges=style_ranges,
-            dst_seeds=dst_seeds
+            dst_seeds=dst_seeds,
             image_shrink=1,
             image_zoom=1,
             duration_sec=30.0,
