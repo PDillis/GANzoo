@@ -67,7 +67,7 @@ def generate_interpolation_video(
     duration_sec=30.0,
     smoothing_sec=3.0,
     mp4_fps=30,
-    mp4_codec="libx265",
+    mp4_codec="libx264",
     mp4_bitrate="16M",
     seed=1000,
     minibatch_size=8,
@@ -126,7 +126,7 @@ def generate_interpolation_video(
     import moviepy.editor  # pip install moviepy
 
     videoclip = moviepy.editor.VideoClip(make_frame, duration=duration_sec)
-    videoclip.write_videofile(mp4, fps=mp4_fps, codec="libx264", bitrate=mp4_bitrate)
+    videoclip.write_videofile(mp4, fps=mp4_fps, codec=mp4_codec, bitrate=mp4_bitrate)
 
 
 def main(model_path, seed, duration_sec, cols, rows, fps):

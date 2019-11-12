@@ -26,7 +26,7 @@ def load_Gs(model_path):
 
 def create_image_grid(images, grid_size=None):
     assert images.ndim == 3 or images.ndim == 4
-    num, img_h, img_w, channels = images.shape
+    num, img_w, img_h = images.shape[0], images.shape[-1], images.shape[-2]
 
     if grid_size is not None:
         grid_w, grid_h = tuple(grid_size)
@@ -34,11 +34,13 @@ def create_image_grid(images, grid_size=None):
         grid_w = max(int(np.ceil(np.sqrt(num))), 1)
         grid_h = max((num - 1) // grid_w + 1, 1)
 
-    grid = np.zeros([grid_h * img_h, grid_w * img_w, channels], dtype=images.dtype)
+    grid = np.zeros(
+        list(images.shape[1:-2]) + [grid_h * img_h, grid_w * img_w], dtype=images.dtype
+    )
     for idx in range(num):
         x = (idx % grid_w) * img_w
         y = (idx // grid_w) * img_h
-        grid[y : y + img_h, x : x + img_w] = images[idx]
+        grid[..., y : y + img_h, x : x + img_w] = images[idx]
     return grid
 
 def generate_interpolation_video(
@@ -51,7 +53,7 @@ def generate_interpolation_video(
     duration_sec=30.0,
     smoothing_sec=3.0,
     mp4_fps=30,
-    mp4_codec="libx265",
+    mp4_codec="libx264",
     mp4_bitrate="16M",
     seed=1000,
     minibatch_size=8,
@@ -61,9 +63,6 @@ def generate_interpolation_video(
     mp4 = save_path + "seed_{}-slerp.mp4".format(seed)
     num_frames = int(np.rint(duration_sec * mp4_fps))
     random_state = np.random.RandomState(seed)
-
-    print('Loading network from "%s"...' % model_path)
-    Gs = load_Gs(path=model_path)
 
     print("Generating latent vectors...")
     grid_size = [cols, rows]
@@ -109,6 +108,7 @@ def generate_interpolation_video(
 def generate_style_transfer_video(
     save_path,
     mp4_file,
+    size,
     Gs,
     style_ranges,
     dst_seeds=[700, 198],
@@ -117,7 +117,7 @@ def generate_style_transfer_video(
     duration_sec=30.0,
     smoothing_sec=3.0,
     mp4_fps=30,
-    mp4_codec="libx265",
+    mp4_codec="libx264",
     mp4_bitrate="16M",
     seed=1000,
     minibatch_size=8,
@@ -153,7 +153,7 @@ def generate_style_transfer_video(
     def make_frame(t):
         frame_idx = int(np.clip(np.round(t * mp4_fps), 0, num_frames - 1))
         src_image = src_images[frame_idx]
-        canvas.paste(PIL.Image.fromarray(src_image, 'RGB'), (0, h))
+        canvas.paste(PIL.Image.fromarray(src_image, 'RGB'), (0, height))
 
         for col, dst_image in enumerate(list(dst_images)):
             col_dlatents = np.stack([dst_dlatents[col]])
@@ -173,6 +173,7 @@ def main(model_path, seed, size, cols=3, rows=2, random=False, coarse=False, mid
     tflib.init_tf()
 
     # Load the Generator (stable version):
+    print('Loading network from {}...'.format(model_path))
     Gs = load_Gs(model_path=model_path)
 
     # Let's get the model name (without the .pkl):
@@ -198,9 +199,9 @@ def main(model_path, seed, size, cols=3, rows=2, random=False, coarse=False, mid
             Gs=Gs,
             cols=cols,
             rows=rows,
-            duration_sec=duration_sec,
+            duration_sec=30.0,
             seed=seed,
-            mp4_fps=fps,
+            mp4_fps=30,
         )
     if coarse:
         dst_seeds = [700, 198]
@@ -210,6 +211,7 @@ def main(model_path, seed, size, cols=3, rows=2, random=False, coarse=False, mid
         generate_style_transfer_video(
             save_path=save_path,
             mp4_file=mp4_file,
+            size=size,
             Gs=Gs,
             style_ranges=style_ranges,
             dst_seeds=dst_seeds,
@@ -218,7 +220,7 @@ def main(model_path, seed, size, cols=3, rows=2, random=False, coarse=False, mid
             duration_sec=30.0,
             smoothing_sec=3.0,
             mp4_fps=30,
-            mp4_codec="libx265",
+            mp4_codec="libx264",
             mp4_bitrate="16M",
             seed=seed,
             minibatch_size=8,
@@ -230,6 +232,7 @@ def main(model_path, seed, size, cols=3, rows=2, random=False, coarse=False, mid
         generate_style_transfer_video(
             save_path=save_path,
             mp4_file=mp4_file,
+            size=size,
             Gs=Gs,
             style_ranges=style_ranges,
             dst_seeds=dst_seeds,
@@ -238,7 +241,7 @@ def main(model_path, seed, size, cols=3, rows=2, random=False, coarse=False, mid
             duration_sec=30.0,
             smoothing_sec=3.0,
             mp4_fps=30,
-            mp4_codec="libx265",
+            mp4_codec="libx264",
             mp4_bitrate="16M",
             seed=seed,
             minibatch_size=8,
@@ -250,6 +253,7 @@ def main(model_path, seed, size, cols=3, rows=2, random=False, coarse=False, mid
         generate_style_transfer_video(
             save_path=save_path,
             mp4_file=mp4_file,
+            size=size,
             Gs=Gs,
             style_ranges=style_ranges,
             dst_seeds=dst_seeds,
@@ -258,7 +262,7 @@ def main(model_path, seed, size, cols=3, rows=2, random=False, coarse=False, mid
             duration_sec=30.0,
             smoothing_sec=3.0,
             mp4_fps=30,
-            mp4_codec="libx265",
+            mp4_codec="libx264",
             mp4_bitrate="16M",
             seed=seed,
             minibatch_size=8,
@@ -285,7 +289,7 @@ def parse():
         "--size",
         type=int,
         help="Size of generated images.",
-        default=512
+        required=True
     )
     parser.add_argument(
         "--cols",
