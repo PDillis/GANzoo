@@ -95,9 +95,9 @@ def main(model_path, seed=1000):
         os.makedirs(save_path)
     # Generate video.
     mp4_file = save_path + 'seed_{}-circular.mp4'.format(seed)
-    mp4_codec = 'libx264'
-    mp4_bitrate = '3M'
-    mp4_fps = 20
+    mp4_codec = 'libx265'
+    mp4_bitrate = '15M'
+    mp4_fps = 30
 
     frames.write_videofile(mp4_file, fps=mp4_fps, codec=mp4_codec, bitrate=mp4_bitrate)
 
