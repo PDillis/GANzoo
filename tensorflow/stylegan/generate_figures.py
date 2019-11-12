@@ -294,10 +294,10 @@ def main(
         n = int(2 * (np.log2(size) - 1))
         # We assume that size > 32, otherwise, why use StyleGAN?
         dic_styles = dict(
-            all=[range(0, 4)] * 3 + [range(4, 8)] * 2 + [range(8, n)],
-            coarse=[range(0, 4)] * 6,
-            middle=[range(4, 8)] * 6,
-            fine=[range(8, n)] * 6,
+            all=[range(0, 4)] * 3 + [range(4, 8)] * 2 + [range(8, n)], # 3 + 2 + 1 = 6 = len(dst_seeds)
+            coarse=[range(0, 4)] * len(dst_seeds),
+            middle=[range(4, 8)] * len(dst_seeds),
+            fine=[range(8, n)] * len(dst_seeds),
         )
         for k in dic_styles.keys():
             save_name = save_path + "figure03-style-mixing-{}.png".format(k)
