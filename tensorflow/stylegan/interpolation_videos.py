@@ -3,6 +3,7 @@
 import os
 import pickle
 import argparse
+from argparse import RawTextHelpFormatter
 import re
 
 import numpy as np
@@ -190,7 +191,7 @@ def generate_style_transfer_video(
         mp4_file, fps=mp4_fps, codec=mp4_codec, bitrate=mp4_bitrate
     )
 
-# From Snowy Halcy: https://twitter.com/halcy/status/1098223180454477824?s=20
+# From Snowy Halcy: https://github.com/halcy/stylegan/blob/master/Stylegan-Generate-Encode.ipynb
 # with my modifications:
 def generate_circular_interpolation_video(
     save_path,
@@ -403,7 +404,12 @@ def main(
 
 def parse():
     parser = argparse.ArgumentParser(
-        description="Circular interpolation with respect to a point."
+        description="Interpolation videos with a trained StyleGAN. Three types of videos can be generated:\n\
+\t *Interpolation between random latent vectors (--random) {--rows --cols} \n\
+\t *Style transfer interpolation videos (--coarse --middle --fine) {--dst_seeds} \n\
+\t *Circular interpolation video (--circular)\n\
+You can generate all the videos by simply adding the --generate_all flag. Have fun!",
+        formatter_class=RawTextHelpFormatter
     )
     parser.add_argument(
         "--model_path",
