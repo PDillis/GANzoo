@@ -1,3 +1,6 @@
+# From Jason Brownlee:
+# https://machinelearningmastery.com/how-to-develop-a-generative-adversarial-network-for-a-1-dimensional-function-from-scratch-in-keras/
+
 import matplotlib
 import matplotlib.pyplot as plt
 import imageio
@@ -160,6 +163,7 @@ discriminator = define_discriminator()
 generator = define_generator(latent_dim)
 gan_model = define_gan(generator, discriminator)
 
-train(g_model=generator, d_model=discriminator,
-      gan_model=gan_model, latent_dim=latent_dim, fr=frames)
-imageio.mimsave('./tan.avi', frames, fps=60)
+if __name__=='__main__':
+    train(g_model=generator, d_model=discriminator,
+          gan_model=gan_model, latent_dim=latent_dim, fr=frames)
+    imageio.mimsave('./tan.avi', frames, fps=60)
