@@ -2,10 +2,14 @@
 from tensorflow.keras.layers import Input, Dense, Lambda
 from tensorflow.keras.models import Model
 from tensorflow.keras import backend as K
-from tensorflow.keras import objectives
+from tensorflow.keras import losses
 from tensorflow.keras.datasets import mnist
-import numpy as np
 
+import numpy as np
+from scipy.stats import norm
+from skimage.metrics import structural_similarity as ssim
+
+import matplotlib.pyplot as plt
 
 # Set global variables and hyperparameters
 
@@ -13,7 +17,7 @@ batch_size = 100
 original_dim = 28*28
 latent_dim = 2
 intermediate_dim = 256
-nb_epoch = 5
+nb_epoch = 50
 epsilon_std = 1.0
 
 ### Creating the Encoder ###
@@ -56,12 +60,20 @@ vae = Model(x, output_combined)
 vae.summary()
 
 ### Loss function ###
-def vae_loss(x, x_decoded_mean, z_mean, z_log_var, original_dim=original_dim):
+def vae_loss(x, x_decoded_mean, z_mean=z_mean, z_log_var=z_log_var, original_dim=original_dim):
     # Binary crossentropy loss:
-    xent_loss = original_dim * objectives.binary_crossentropy(x, x_decoded_mean)
+    xent_loss = original_dim * losses.binary_crossentropy(x, x_decoded_mean)
     # KL divergence:
     kl_loss = -0.5 * K.sum(1 + z_log_var - K.square(z_mean) - K.exp(z_log_var), axis=-1)
     return xent_loss + kl_loss
+
+def ssim_loss(x, x_decoded_mean, z_mean=z_mean, z_log_var=z_log_var, original_dim=original_dim):
+    # SSIM loss:
+    ssim_loss = ssim(x, decoder.predict(encoder.predict(x)))
+    # KL divergence:
+    kl_loss = -0.5 * K.sum(1 + z_log_var - K.square(z_mean) - K.exp(z_log_var), axis=-1)
+    return ssim_loss + kl_loss
+
 
 # Compile the model:
 vae.compile(optimizer='rmsprop', loss=vae_loss)
@@ -84,3 +96,77 @@ vae.fit(x_train, x_train,
         batch_size=batch_size,
         validation_data=(x_test, x_test),
         verbose=1)
+
+### Generate new data ###
+
+x_test_encoded = encoder.predict(x_test, batch_size=batch_size)[0]
+
+# Figure 2.6
+plt.figure(figsize=(6, 6))
+plt.scatter(x_test_encoded[:, 0], x_test_encoded[:, 1], c=y_test, cmap='viridis')
+plt.colorbar()
+plt.show()
+
+# Figure 2.7
+
+# Display a 2d manifold of the digits
+n = 15 # (15x15 images)
+digit_size = 28
+figure = np.zeros((digit_size * n, digit_size * n))
+# Since the latent space is Gaussian:
+grid_x = norm.ppf(np.linspace(0.05, 0.95, n))
+grid_y = norm.ppf(np.linspace(0.05, 0.95, n))
+
+for i, yi in enumerate(grid_x):
+    for j, xj in enumerate(grid_y):
+        z_sample = np.array([[xj, yi]])
+        x_decoded = decoder.predict(z_sample)
+        digit = x_decoded[0].reshape(digit_size, digit_size)
+        figure[i * digit_size: (i + 1) * digit_size,
+               j * digit_size: (j + 1) * digit_size] = digit
+
+
+plt.figure(figsize=(10, 10))
+plt.imshow(figure, cmap='Greys_r')
+plt.show()
+
+
+x_test_encoded.shape
+len(encoder.predict(x_test, batch_size=batch_size)[2])
+
+x_test_encoded[0]
+
+x_test_encoded_decoded = decoder.predict(x_test_encoded)
+
+
+def mse(x, y):
+    return np.linalg.norm(x - y)
+
+ssim_array = np.array([ssim(x_test[i].reshape(28, 28), x_test_encoded_decoded[i].reshape(28, 28), full=True)[1] for i in range(columns)])
+
+images = np.vstack((x_test[:columns], x_test_encoded_decoded[:columns], ssim_array.reshape(columns, -1)))
+
+def plot(images, columns=10, rows=3):
+    fig=plt.figure(figsize=(2*columns, 2*rows))
+    for i in range(columns*rows):
+        img = images[i]
+        fig.add_subplot(rows, columns, i + 1)
+        plt.imshow(img.reshape(28, 28), cmap='Greys_r')
+        if i == 0:
+            plt.ylabel("OG image")
+        if i == columns:
+            plt.ylabel("Rec. image")
+        if i == 2 * columns:
+            plt.ylabel("SSIM")
+        if i >= (rows - 1) * columns:
+            s_sim = ssim(images[i - 2 * columns], images[i - columns])
+            ms = mse(images[i - 2 * columns], images[i - columns])
+            xlabel = "SSIM={:.3f}\nMSE={:.3f}".format(s_sim, ms)
+            plt.xlabel(xlabel)
+        plt.xticks([])
+        plt.yticks([])
+    plt.show()
+
+plot(images)
+
+ssim(images[0].reshape(28, 28), images[10].reshape(28, 28))
