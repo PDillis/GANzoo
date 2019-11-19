@@ -1,3 +1,5 @@
+# From GANs in Action https://www.manning.com/books/gans-in-action
+
 # Standard imports (for tensorflow >= 1.14)
 from tensorflow.keras.layers import Input, Dense, Lambda
 from tensorflow.keras.models import Model
@@ -17,7 +19,7 @@ batch_size = 100
 original_dim = 28*28
 latent_dim = 2
 intermediate_dim = 256
-nb_epoch = 50
+nb_epoch = 5
 epsilon_std = 1.0
 
 ### Creating the Encoder ###
@@ -59,6 +61,13 @@ vae = Model(x, output_combined)
 # Print the model:
 vae.summary()
 
+# Access a specific layer:
+vae.get_layer('encoder').output
+
+# So encoder outputs [(None, 2), (None, 2), (None, 2)], the first is the mean,
+# second is the variance, third is the Lambda function defined above, which will
+# return Z, or the sampling.
+
 ### Loss function ###
 def vae_loss(x, x_decoded_mean, z_mean=z_mean, z_log_var=z_log_var, original_dim=original_dim):
     # Binary crossentropy loss:
@@ -66,14 +75,6 @@ def vae_loss(x, x_decoded_mean, z_mean=z_mean, z_log_var=z_log_var, original_dim
     # KL divergence:
     kl_loss = -0.5 * K.sum(1 + z_log_var - K.square(z_mean) - K.exp(z_log_var), axis=-1)
     return xent_loss + kl_loss
-
-def ssim_loss(x, x_decoded_mean, z_mean=z_mean, z_log_var=z_log_var, original_dim=original_dim):
-    # SSIM loss:
-    ssim_loss = ssim(x, decoder.predict(encoder.predict(x)))
-    # KL divergence:
-    kl_loss = -0.5 * K.sum(1 + z_log_var - K.square(z_mean) - K.exp(z_log_var), axis=-1)
-    return ssim_loss + kl_loss
-
 
 # Compile the model:
 vae.compile(optimizer='rmsprop', loss=vae_loss)
@@ -99,13 +100,21 @@ vae.fit(x_train, x_train,
 
 ### Generate new data ###
 
+len(encoder.predict(x_test, batch_size=100))
+
+decoder.predict(encoder.predict(x_test, batch_size=batch_size)).shape
+
+plt.imshow(decoder.predict(encoder.predict(x_test, batch_size=batch_size))[0].reshape(28, 28))
+
 x_test_encoded = encoder.predict(x_test, batch_size=batch_size)[0]
+# We will then plot just the mean z of each x_test_encoded
 
 # Figure 2.6
-plt.figure(figsize=(6, 6))
+plt.figure(figsize=(10, 8))
 plt.scatter(x_test_encoded[:, 0], x_test_encoded[:, 1], c=y_test, cmap='viridis')
 plt.colorbar()
 plt.show()
+
 
 # Figure 2.7
 
@@ -170,3 +179,15 @@ def plot(images, columns=10, rows=3):
 plot(images)
 
 ssim(images[0].reshape(28, 28), images[10].reshape(28, 28))
+
+
+#################### Second try, with different loss ####################
+
+
+### Loss function ### (this is incorrect)
+def ssim_loss(x, x_decoded_mean, z_mean=z_mean, z_log_var=z_log_var, original_dim=original_dim):
+    # SSIM loss:
+    ssim_loss = ssim(x, decoder.predict(encoder.predict(x)))
+    # KL divergence:
+    kl_loss = -0.5 * K.sum(1 + z_log_var - K.square(z_mean) - K.exp(z_log_var), axis=-1)
+    return ssim_loss + kl_loss
