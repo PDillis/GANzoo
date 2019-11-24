@@ -1,4 +1,4 @@
-# From GANs in Action https://www.manning.com/books/gans-in-action
+# From GANs in Action: https://www.manning.com/books/gans-in-action
 
 # Standard imports (for tensorflow >= 1.14)
 from tensorflow.keras.layers import Input, Dense, Lambda
