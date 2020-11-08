@@ -1,26 +1,38 @@
 # From GANs in Action: https://www.manning.com/books/gans-in-action
+# Let's make it sequential: http://louistiao.me/posts/implementing-variational-autoencoders-in-keras-beyond-the-quickstart-tutorial/
 
 # Standard imports (for tensorflow >= 1.14)
 from tensorflow.keras.layers import Input, Dense, Lambda
-from tensorflow.keras.models import Model
+from tensorflow.keras.models import Model, Sequential
+from tensorflow.keras.utils import plot_model
+from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from tensorflow.keras import backend as K
 from tensorflow.keras import losses
 from tensorflow.keras.datasets import mnist
 
 import numpy as np
 from scipy.stats import norm
-from skimage.metrics import structural_similarity as ssim
+# from skimage.metrics import structural_similarity as ssim
 
 import matplotlib.pyplot as plt
 
+import argparse
+import os
+
 # Set global variables and hyperparameters
 
-batch_size = 100
-original_dim = 28*28
+batch_size = 128
+size = 28
+original_dim = size*size
 latent_dim = 2
 intermediate_dim = 256
 nb_epoch = 5
 epsilon_std = 1.0
+
+train_path = '/home/diego/Documents/datasets/mnist_png/training/'
+test_path = '/home/diego/Documents/datasets/mnist_png/testing/'
+
+color_mode = 'grayscale'
 
 ### Creating the Encoder ###
 
@@ -39,6 +51,12 @@ encoder = Model(x, [z_mean, z_log_var, z], name='encoder')
 
 # Now we must sample from the latent space and feed this to the Decoder
 def sampling(args):
+    """
+    Args:
+        args (tensor): mean and log variance of Q(z|X)
+    Returns:
+        z (tensor): sampled latent tensor
+    """
     z_mean, z_log_var = args
     epsilon = K.random_normal(shape=(batch_size, latent_dim), mean=0.)
     return z_mean + K.exp(z_log_var / 2) * epsilon
@@ -69,6 +87,7 @@ vae.get_layer('encoder').output
 # return Z, or the sampling.
 
 ### Loss function ###
+# For a detailed explanation of this loss, refer to: https://deepakbaby.github.io/post/vae-keras/
 def vae_loss(x, x_decoded_mean, z_mean=z_mean, z_log_var=z_log_var, original_dim=original_dim):
     # Binary crossentropy loss:
     xent_loss = original_dim * losses.binary_crossentropy(x, x_decoded_mean)
@@ -85,10 +104,10 @@ vae.compile(optimizer='rmsprop', loss=vae_loss)
 # We first normalize the data and then reshape the images to not be a matrix,
 # but instead be a long vector (784 long):
 x_train = x_train.astype('float32') / 255
-x_train = x_train.reshape((len(x_train), np.prod(x_train.shape[1:])))
-
+x_train = x_train.reshape((len(x_train), -1))
+x_train.shape
 x_test = x_test.astype('float32') / 255
-x_test = x_test.reshape((len(x_test), np.prod(x_test.shape[1:])))
+x_test = x_test.reshape((len(x_test), -1))
 
 # We fit and shuffle and monitor the progress with the validation data:
 vae.fit(x_train, x_train,
@@ -97,6 +116,33 @@ vae.fit(x_train, x_train,
         batch_size=batch_size,
         validation_data=(x_test, x_test),
         verbose=1)
+
+datagen = ImageDataGenerator(rescale=1./255)
+
+train_iterator = datagen.flow_from_directory(directory=train_path,
+                                             target_size=(size, size),
+                                             color_mode=color_mode,
+                                             batch_size=batch_size,
+                                             shuffle=True)
+
+x, y = train_iterator.next()
+
+x.shape
+y.shape
+
+plt.imshow(x[3].reshape(size, size))
+plt.title(str(np.argmax(y[3])))
+
+test_iterator = datagen.flow_from_directory(directory=test_path,
+                                            target_size=(size, size),
+                                            color_mode=color_mode,
+                                            batch_size=batch_size,
+                                            shuffle=True)
+
+vae.fit_generator(train_iterator,
+                  epochs=nb_epoch,
+                  validation_data=test_iterator)
+
 
 ### Generate new data ###
 
@@ -155,14 +201,15 @@ ssim_array = np.array([ssim(x_test[i].reshape(28, 28), x_test_encoded_decoded[i]
 
 images = np.vstack((x_test[:columns], x_test_encoded_decoded[:columns], ssim_array.reshape(columns, -1)))
 
-def plot(images, columns=10, rows=3):
+def plot(images, columns=10):
+    rows = 3 # 3 rows: original image, reconstructed image, SSIM image
     fig=plt.figure(figsize=(2*columns, 2*rows))
     for i in range(columns*rows):
         img = images[i]
         fig.add_subplot(rows, columns, i + 1)
         plt.imshow(img.reshape(28, 28), cmap='Greys_r')
         if i == 0:
-            plt.ylabel("OG image")
+            plt.ylabel("Orig. image")
         if i == columns:
             plt.ylabel("Rec. image")
         if i == 2 * columns:
@@ -181,6 +228,32 @@ plot(images)
 ssim(images[0].reshape(28, 28), images[10].reshape(28, 28))
 
 
+def train():
+    pass
+
+def parse():
+    parse = argparse.ArgumentParser()
+    parse.add_argument(
+        'image_path',
+        type=str,
+        required=True,
+    )
+    parse.add_argument(
+        '--batch_size',
+        type=int,
+        default=32,
+    )
+    args = parse.parse_args()
+    return args
+
+def main():
+    pass
+
+
+
+if __name__=='__main__':
+    args = parse()
+    main()
 #################### Second try, with different loss ####################
 
 
