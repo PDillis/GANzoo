@@ -1,0 +1,23 @@
+# Parameters
+BATCH_SIZE: 512
+LATENT_DIM: 5
+LR_GENERATOR: 0.0001
+LR_DISCRIMINATOR: 0.0001
+
+MANUAL_SEED: 42
+DEVICE: 'cpu'  # choose between CPU ('cpu') and GPU ('cuda')
+
+EXPERIMENT_NAME: 'NormalDistribution'
+
+MODELS_CONFIGURATION:
+  GENERATOR:
+    - fullyconnected:
+        neurons: [5, 15, 1]
+        dropout: [0.0]
+
+  DISCRIMINATOR:
+    - fullyconnected:
+        neurons: [1, 25, 1]
+        dropout: [0.0]
+
+        # TODO: add batchnorm to the models

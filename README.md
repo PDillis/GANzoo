@@ -9,7 +9,8 @@ For now, this project will be developed using [`PyTorch`](https://pytorch.org/),
 such as Keras/TensorFlow, Jax, etc.
 
 ## TODO: 
-- [ ] Complete 1D GAN code
+- [ ] Complete 1D GAN code (following not necessarily in order)
+  - [ ] Make `train.py` and `generate.py` code (add interpolations and whatnot in the latter).
   - [ ] Add manual seed to latents
   - [ ] Make it easy to sample or generate new fake data with seed (e.g., `generate.py`)
   - [ ] Add command line arguments (make everything controllable, but with default values)

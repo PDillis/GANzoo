@@ -8,6 +8,7 @@ from torch import nn
 
 import shutil
 import time
+import yaml
 
 from util.data import NormalDistribution, LaplaceDistribution, HalfNormalDistribution, PetitPrinceDistribution
 from util.utils import set_device, print_stats, get_latents, network_summary, weights_init, plot_distribution, \
@@ -16,6 +17,8 @@ from util.utils import set_device, print_stats, get_latents, network_summary, we
 ##########################################################################################
 ###################################### The Networks ######################################
 ##########################################################################################
+# TODO: to become networks.py, using config.yml
+
 
 class Generator(nn.Module):
     def __init__(self, latent_dim=5, hidden_dim=15, output_size=1):
@@ -53,7 +56,7 @@ class Discriminator(nn.Module):
 ####################################### Parameters #######################################
 ##########################################################################################
 
-# to become config.yml
+# TODO: already moved to config.yml, now we must import it accordingly (as well as the networks)
 batch_size = 512
 latent_dim = 5
 lr_gen = 0.0001
@@ -72,7 +75,7 @@ discriminator = Discriminator().to(device)
 
 fixed_latent = get_latents(num_latents=batch_size, latent_dim=latent_dim)
 
-def train(discriminator, generator, num_epochs=50, lr=1e-4, num_eval=1, data=data,
+def train_loop(discriminator, generator, data, num_epochs=50, lr=1e-4, num_eval=1,
           hist=True, kde=False, root='./animation', d_repeats=1):
     # Some sanity check:
     assert num_epochs > 0 and isinstance(num_epochs, int), "Epochs must be at least 1 and an int!"
@@ -200,7 +203,7 @@ def train(discriminator, generator, num_epochs=50, lr=1e-4, num_eval=1, data=dat
     # fake data generated with our fixed_latent
     return G_losses, D_losses, fake_data
 
-
+# TODO: save this into a .npy file, where a plot_training command will easily find it
 G_losses, D_losses, fake_data = train(num_epochs=100, lr=1e-4, num_eval=10, data=data,
                                       hist=False, kde=True, root='./animation', d_repeats=1)
 
