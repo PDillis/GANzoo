@@ -1,6 +1,6 @@
 import sys
 import os
-from typing import Union
+from typing import Union, Tuple, List
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -10,12 +10,11 @@ import torch
 from torch import nn
 
 ##########################################################################################
-################################### Utility functions ####################################
+#                                   Utility functions
 ##########################################################################################
 
-# to become util.py
 
-def set_device(use_gpu=True):
+def set_device(use_gpu: bool = True) -> torch.device:
     """
     Args:
         use_gpu (bool): whether or not the user wishes to use a GPU
@@ -26,57 +25,59 @@ def set_device(use_gpu=True):
     print(f'Current device: {device}')
     return device
 
-def print_stats(use_gpu=True):
+
+def print_stats(use_gpu: bool = True) -> None:
     """
     Args:
         use_gpu (bool): whether the user wishes to use GPU or not
     Outputs:
         (None):
-            Prints stats for the current system:
-            For each available GPU, the device name, as well as its compute capability
-            In the end, will print if there's a GPU available or if only CPU is used
+            Prints, for each available GPU, the device name, as well as its compute capability
+            If none are available or the user doesn't wish to use one, the CPU will be used and printed accordingly
     """
     print(f"PyTorch version: {torch.__version__}")
     if torch.cuda.is_available() and use_gpu:
         n_gpu = torch.cuda.device_count()
         for i in range(n_gpu):
             high, low = torch.cuda.get_device_capability(i)
-            message = f'GPU {i}, Device: {torch.cuda.get_device_name(i)}, Compute Capability: {high}.{low}'
-            print(message)
+            print(f'GPU {i}, Device: {torch.cuda.get_device_name(i)}, Compute Capability: {high}.{low}')
     else:
         print('Using only CPU...')
 
 
-def get_latents(num_latents, of_type, device='cuda', latent_dim=5):
+def get_latents(num_latents: int, of_type: str,
+                device: torch.device = torch.device('cuda'),
+                latent_dim: int = 5) -> torch.Tensor:
     """
     Args:
         num_latents (int): number of latent vectors to generate
         of_type (str): type of latent vectors to generate (choices: 'normal', 'uniform')
-        device (str): device to use; either 'cuda' or 'cpu'
+        device (torch.device): device to use; either 'cuda' or 'cpu'
         latent_dim (int): size of the latent dimension
     Outputs:
         latents (torch.Tensor): tensor of latent vectors of shape (n, latent_dim)
     """
-    # TODO: Make a dict with all the available distributions and make a simple call to the dict
-    if of_type == 'normal':
-        latents = torch.randn(num_latents, latent_dim, device=device)
-    elif of_type == 'uniform':
-        latents = torch.rand(num_latents, latent_dim, device=device)
-    else:
+    dict_dist = {'normal': torch.randn, 'uniform': torch.rand}
+    try:
+        latents = dict_dist[of_type](num_latents, latent_dim, device=device)
+        return latents
+    except KeyError:
         print('Please use either "normal" or "uniform" as the distribution of the latent vectors (of_type).')
         sys.exit(1)
-    return latents
 
 
-def network_summary(network, weights=False, summary=False, input_size=(1, )):
+def network_summary(network: nn.Module,
+                    weights: bool = False,
+                    summary: bool = False,
+                    input_size: Tuple[int] = (1, )) -> None:
     """
     Args:
         network (nn.Module): neural network that you wish to print its weights/parameters
-        weights (bool): Print the values of the weights
+        weights (bool): Print the values of the weights (might be a long output to the console)
         summary (bool): Whether or not to print a summary of the network
         input_size (tuple): Size of input to simulate a batch that passes through the network
     Output:
-        (NoneType): Prints the values of the weights in the network, and a summary
+        (NoneType): Prints the values of the weights in the network and/or a summary
                 (Layers, Output Shape, Param #)
     """
     if weights:
@@ -107,14 +108,14 @@ init_dict = {
     }
 
 
-def weights_init(module, init_type='kaiming', const=None):
+def weights_init(module: nn.Module, init_type: str = 'kaiming', const: float = None) -> None:
     """
     Args:
         module (nn.Module): layer of a neural network
         init_type (str): type of initialization to apply; must be in  init_dict
         const (float): constant value to fill the weight, if init_type='constant'
     Output:
-        (NoneType), applies the desired initialization to the layers
+        (NoneType), applies the desired initialization to the module's layers
     """
     # We will use a set of available initializations
     if init_type not in init_dict:
@@ -124,6 +125,7 @@ def weights_init(module, init_type='kaiming', const=None):
         # The special case will be the constant initialization
         if init_type == 'constant':
             # Make sure the user has provided the constant value
+            # (guard against user forgetting and using a default value set by me, say 0.5)
             assert const is not None, 'Please provide the constant value! (const)'
             # Then, initialize the weight with the provided constant
             init_dict[init_type](module.weight, const)
@@ -134,7 +136,13 @@ def weights_init(module, init_type='kaiming', const=None):
         module.bias.data.fill_(0.0)
 
 
-def plot_distribution(data, fake_data, epoch, hist=False, kde=True, figsize=(8, 6), root='./animation'):
+def plot_distribution(data: torch.Tensor,
+                      fake_data: torch.Tensor,
+                      epoch: int,
+                      hist: bool = False,
+                      kde: bool = True,
+                      figsize: Tuple[int] = (8, 6),
+                      root: Union[str, os.PathLike] = os.path.join(os.getcwd(), 'animation')) -> None:
     """
     Args:
         data (torch.Tensor): real data that is being mimicked
@@ -143,7 +151,7 @@ def plot_distribution(data, fake_data, epoch, hist=False, kde=True, figsize=(8, 
         hist (bool): whether or not to plot the histogram of the distribution
         kde (bool): whether or not to add the plot the KDE of the distribution
         figsize (tuple): size of the figure (width, height)
-        root (str): save root/path where the plot image will be saved to
+        root ([str, os.PathLike]): save root/path where the plot image will be saved to
     Output:
         (NoneType) Plot of the real and fake/generated data distributions, saved in the root directory
     """
@@ -169,12 +177,23 @@ def plot_distribution(data, fake_data, epoch, hist=False, kde=True, figsize=(8, 
     plt.close(fig)
 
 
-def plot_losses(D_loss, G_loss, figsize=(8, 6)):
+def plot_losses(D_loss: List[torch.Tensor], G_loss: List[torch.Tensor], figsize: Tuple[int] = (8, 6)):
+    """
+
+    Args:
+        D_loss: Discriminator loss during training
+        G_loss: Generator loss during trianing
+        figsize: Figure size
+
+    Returns:
+
+    """
     return None
 
 
 def format_time(seconds: Union[int, float]) -> str:
     """
+    Helper function for printing the time during training
     Args:
         seconds ([int, float]): Seconds that have passed
     Output:

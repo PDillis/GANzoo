@@ -56,24 +56,29 @@ class Discriminator(nn.Module):
 ####################################### Parameters #######################################
 ##########################################################################################
 
+pth_yaml = 'config.yml'
+with open(pth_yaml, 'r') as file:
+    config = yaml.load(file, Loader=yaml.FullLoader)
+
 # TODO: already moved to config.yml, now we must import it accordingly (as well as the networks)
-batch_size = 512
-latent_dim = 5
-lr_gen = 0.0001
-lr_dis = 0.0001
+batch_size = config['BATCH_SIZE']
+latent_dim = config['LATENT_DIM']
+lr_gen = config['LR_GENERATOR']
+lr_dis = config['LR_DISCRIMINATOR']
 
-device = set_device(use_gpu=True)
+device = set_device(use_gpu=config['USE_GPU'])
 
-criterion = nn.BCELoss()
+criterion = nn.BCELoss()  # TODO: let user decide optimization algo (dict might be appropriate?)
 
 ##########################################################################################
-####################################### Train loop #######################################
+#                                       Train loop
 ##########################################################################################
 
 generator = Generator().to(device)
 discriminator = Discriminator().to(device)
 
 fixed_latent = get_latents(num_latents=batch_size, latent_dim=latent_dim)
+
 
 def train_loop(discriminator, generator, data, num_epochs=50, lr=1e-4, num_eval=1,
           hist=True, kde=False, root='./animation', d_repeats=1):
@@ -207,8 +212,8 @@ def train_loop(discriminator, generator, data, num_epochs=50, lr=1e-4, num_eval=
 G_losses, D_losses, fake_data = train(num_epochs=100, lr=1e-4, num_eval=10, data=data,
                                       hist=False, kde=True, root='./animation', d_repeats=1)
 
-means = [d.mean() for d in fake_data]
-stds = [d.std() for d in fake_data]
+means = torch.mean(fake_data, axis=1)
+stds = torch.std(fake_data, axis=1)
 
 fig = plt.figure(figsize=(8, 6))
 ax = fig.add_axes([0, 0, 1, 1])
