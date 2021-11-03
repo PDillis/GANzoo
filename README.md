@@ -6,7 +6,7 @@ networks do: in particular, what they *learn*. Whenever some work is inspired by
 previous work, it will be duly credited.
 
 For now, this project will be developed using [`PyTorch`](https://pytorch.org/), 
-but if possible/if I have both time and patience, I will expand it to other frameworks 
+but if possible/I have both time and patience, I will expand it to other frameworks 
 such as `Keras`/`TensorFlow 2.0`, `Julia`, etc. (this is my way of saying I will 
 accept pull requests for anyone interested in contributing).
 

@@ -98,7 +98,7 @@ generator = build_generator(img_shape=img_shape, z_dim=z_dim)
 # Keep the parameters of the Discriminator constant whilst the Generator trains:
 discriminator.trainable = False
 
-# Build and compile the GAN with fixed Discriminatorto train the Generator:
+# Build and compile the GAN with fixed Discriminator to train the Generator:
 gan = build_gan(generator=generator, discriminator=discriminator)
 gan.compile(loss='binary_crossentropy', optimizer=Adam())
 
@@ -109,9 +109,9 @@ gan.compile(loss='binary_crossentropy', optimizer=Adam())
 # train the Discriminator network while keeping the Generator's parameters
 # constant.
 
-# We then generate a minibatch of fake imagesand use those to train the Generator
+# We then generate a minibatch of fake images and use those to train the Generator
 # whilst keeping the Discriminator's parameters constant. This is repeated for
-# each iteration (i.e., epoch).
+# each iteration (e.g., each minibatch or epoch).
 
 # Our labels will simply be one-hot encoded: 1 for real, 0 for fake. The latent
 # vectors will be drawn from the Normal distribution: z ~ N(0, 1). Since the
@@ -125,7 +125,7 @@ epoch_checkpoints = []
 def train(epochs, batch_size, sample_interval):
     # Load the MNIST dataset:
     (X_train, _), (_, _) = mnist.load_data()
-    # Rescale [0, 255] grayscale pixel valules to [-1, 1]:
+    # Rescale [0, 255] grayscale pixel values to [-1, 1]:
     X_train = X_train / 127.5 - 1.0
 
     X_train = np.expand_dims(X_train, axis=3)
